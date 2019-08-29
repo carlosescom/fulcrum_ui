@@ -37,6 +37,7 @@ import { TradeSellErcProcessor } from "./processors/TradeSellErcProcessor";
 import { TradeSellEthProcessor } from "./processors/TradeSellEthProcessor";
 import { UnlendErcProcessor } from "./processors/UnlendErcProcessor";
 import { UnlendEthProcessor } from "./processors/UnlendEthProcessor";
+import { SdkManager, EventName, LightWalletConfig, RadarRelay, LocalAccount } from '@radarrelay/sdk';
 
 export class FulcrumProvider {
   private static readonly priceGraphQueryFunction = new Map<Asset, string>([
@@ -78,6 +79,8 @@ export class FulcrumProvider {
   public accounts: string[] = [];
   public isLoading: boolean = false;
   public unsupportedNetwork: boolean = false;
+  public radarRelay: RadarRelay<LocalAccount>;
+  public markets: any;
 
   constructor() {
     // init
@@ -119,6 +122,36 @@ export class FulcrumProvider {
           }
         });
       });
+    }
+
+    this.radarRelay = SdkManager.Setup({
+      wallet: {
+        password: process.env.PASSWORD,
+        seedPhrase: process.env.SEED_PHRASE
+      },
+      dataRpcUrl: 'https://kovan.infura.io/radar',
+      radarRestEndpoint: 'https://api.kovan.radarrelay.com/v2',
+      radarWebsocketEndpoint: 'wss://ws.kovan.radarrelay.com/v2'
+    } as LightWalletConfig)
+
+    try {
+      this.radarRelay.events.on(EventName.MarketsInitialized, async (data) => {
+        try {
+          console.log('EventName.MarketsInitialized', EventName.MarketsInitialized)
+          let WETH_DAI = await this.radarRelay.markets.getAsync('WETH-DAI')
+          let markets = {
+            'WETH-DAI': {
+              marketData: WETH_DAI,
+              orderBook: await WETH_DAI.getBookAsync()
+            }
+          }
+          this.markets = markets;
+        } catch (e) {
+          console.log(e)
+        }
+      })
+    } catch (e) {
+      console.log(e)
     }
 
     return FulcrumProvider.Instance;
@@ -1386,6 +1419,12 @@ export class FulcrumProvider {
 
   private processTradeRequestTask = async (task: RequestTask, skipGas: boolean) => {
     try {
+      await SdkManager.InitializeAsync(this.radarRelay)
+    } catch (error) {
+      console.log(error)
+    }
+    try {
+
       if (!(this.web3Wrapper && this.contractsSource && this.contractsSource.canWrite)) {
         throw new Error("No provider available!");
       }
@@ -1405,7 +1444,7 @@ export class FulcrumProvider {
           await processor.run(task, account, skipGas);
         } else {
           const processor = new TradeBuyEthProcessor();
-          await processor.run(task, account, skipGas, provider);
+          await processor.run(task, account, skipGas);
         }
 
       // if trader is closing his previously open position

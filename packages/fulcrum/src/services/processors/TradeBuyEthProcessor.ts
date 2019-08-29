@@ -6,6 +6,7 @@ import { TradeRequest } from "../../domain/TradeRequest";
 import { TradeTokenKey } from "../../domain/TradeTokenKey";
 import { FulcrumProviderEvents } from "../events/FulcrumProviderEvents";
 import { FulcrumProvider } from "../FulcrumProvider";
+import { UserOrderType } from "@radarrelay/types";
 
 export class TradeBuyEthProcessor {
   public run = async (task: RequestTask, account: string, skipGas: boolean) => {
@@ -52,9 +53,53 @@ export class TradeBuyEthProcessor {
       gasAmountBN = new BigNumber(gasAmount).multipliedBy(FulcrumProvider.Instance.gasBufferCoeff).integerValue(BigNumber.ROUND_UP);
     }
 
+    let bids = FulcrumProvider.Instance.markets['WETH-DAI'].orderBook.bids
+    console.log(bids)
+
+    let availableSupply
+    if (bids.length > 1)
+      // type availableSupply: (bidsOrAsks => float)
+      availableSupply = bids
+        .reduce((acc: any, currVal: any, currInd: number) => {
+          return (
+            currInd == 1
+              ? parseFloat(acc.remainingQuoteTokenAmount)
+              : acc
+          ) + parseFloat(currVal.remainingQuoteTokenAmount)
+        })
+
+    else if (bids.length == 1)
+      // type availableSupply: (bidsOrAsks array => float)
+      availableSupply = bids[0].remainingQuoteTokenAmount
+
+    try {
+      var remainingDemand = amountInBaseUnits.multipliedBy(taskRequest.leverage - 1)
+
+      for (var i = 0; i < bids.length; i++) {
+        let orderAmount = bids[i].remainingQuoteTokenAmount;
+        console.log('orderAmount', orderAmount)
+        let BnOrderAmount = new BigNumber(orderAmount);
+        console.log('BnOrderAmount', BnOrderAmount)
+        await FulcrumProvider.Instance.markets['WETH-DAI'].marketData
+          .marketOrderAsync(
+            UserOrderType.BUY,
+            BnOrderAmount
+          )
+        remainingDemand = remainingDemand.minus(orderAmount)
+        availableSupply = availableSupply.minus(orderAmount)
+        if (remainingDemand.isLessThanOrEqualTo(0) ||
+          availableSupply.isLessThanOrEqualTo(0)
+        ) break;
+      }
+
+    } catch (e) {
+      console.log(e)
+    }    
+
     let txHash: string = "";
     try {
       FulcrumProvider.Instance.eventEmitter.emit(FulcrumProviderEvents.AskToOpenProgressDlg);
+      
 
       // Submitting trade
       // sends the transaction from user's unlocked account
