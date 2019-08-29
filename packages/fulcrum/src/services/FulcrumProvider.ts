@@ -1397,14 +1397,18 @@ export class FulcrumProvider {
 
       // Initializing loan
       const taskRequest: TradeRequest = (task.request as TradeRequest);
+
+      // if user is opening a position
       if (taskRequest.tradeType === TradeType.BUY) {
         if (taskRequest.collateral !== Asset.ETH) {
           const processor = new TradeBuyErcProcessor();
           await processor.run(task, account, skipGas);
         } else {
           const processor = new TradeBuyEthProcessor();
-          await processor.run(task, account, skipGas);
+          await processor.run(task, account, skipGas, provider);
         }
+
+      // if trader is closing his previously open position
       } else {
         if (taskRequest.collateral !== Asset.ETH) {
           const processor = new TradeSellErcProcessor();

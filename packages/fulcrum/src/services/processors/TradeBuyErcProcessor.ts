@@ -58,11 +58,11 @@ export class TradeBuyErcProcessor {
     task.processingStepNext();
 
     // Detecting token allowance
-    let approvePromise: Promise<string> | null = null;
     const erc20allowance = await tokenErc20Contract.allowance.callAsync(account, tokenContract.address);
     task.processingStepNext();
 
     let txHash: string = "";
+    let approvePromise: Promise<string> | null = null;
     try {
       FulcrumProvider.Instance.eventEmitter.emit(FulcrumProviderEvents.AskToOpenProgressDlg);
 

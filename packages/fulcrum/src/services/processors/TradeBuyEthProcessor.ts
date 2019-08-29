@@ -57,9 +57,12 @@ export class TradeBuyEthProcessor {
       FulcrumProvider.Instance.eventEmitter.emit(FulcrumProviderEvents.AskToOpenProgressDlg);
 
       // Submitting trade
+      // sends the transaction from user's unlocked account
+      // transfers an amountInBaseUnits of ether
+      // mints DAI?
       txHash = await tokenContract.mintWithEther.sendTransactionAsync(account, {
         from: account,
-        value: amountInBaseUnits,
+        value: amountInBaseUnits, // how much ether does it send?
         gas: gasAmountBN.toString(),
         gasPrice: await FulcrumProvider.Instance.gasPrice()
       });
