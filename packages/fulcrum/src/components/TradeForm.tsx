@@ -200,7 +200,14 @@ export class TradeForm extends Component<ITradeFormProps, ITradeFormState> {
 
     // maxTradeValue is raw here, so we should not use it directly
     const maxTradeValue = await FulcrumProvider.Instance.getMaxTradeValue(this.props.tradeType, tradeTokenKey, this.state.collateral);
+    console.log("getInputAmountLimited args:", {
+      inputAmountText: this.state.inputAmountText,
+      inputAmountValue: this.state.inputAmountValue,
+      tradeTokenKey: tradeTokenKey,
+      maxTradeValue: maxTradeValue
+    })
     const limitedAmount = await this.getInputAmountLimited(this.state.inputAmountText, this.state.inputAmountValue, tradeTokenKey, maxTradeValue, false);
+    console.log("limitedAmount: ",limitedAmount)
     const tradeRequest = new TradeRequest(
       this.props.tradeType,
       this.props.asset,
@@ -591,10 +598,20 @@ export class TradeForm extends Component<ITradeFormProps, ITradeFormState> {
     return new Observable<ITradeAmountChangeEvent | null>(observer => {
 
       const tradeTokenKey = this.getTradeTokenGridRowSelectionKey();
+      console.log("getMaxTradeValue args:",{
+        tradeType: this.props.tradeType,
+        tradeTokenKey: tradeTokenKey,
+        collateral: this.state.collateral
+      })
       FulcrumProvider.Instance.getMaxTradeValue(this.props.tradeType, tradeTokenKey, this.state.collateral)
         .then(maxTradeValue => {
+          console.log("getInputAmountLimitedFromBigNumber args:", {
+            maxTradeValue: maxTradeValue,
+            tradeTokenKey: tradeTokenKey
+          })
           // maxTradeValue is raw here, so we should not use it directly
           this.getInputAmountLimitedFromBigNumber(maxTradeValue, tradeTokenKey, maxTradeValue, true).then(limitedAmount => {
+            console.log("limitedAmount: ", limitedAmount)
             if (!limitedAmount.tradeAmountValue.isNaN()) {
               const tradeRequest = new TradeRequest(
                 this.props.tradeType,
