@@ -1,14 +1,17 @@
 import { BigNumber } from "bignumber.js";
 import { pTokenContract } from "../../contracts/pTokenContract";
-import { AssetsDictionary } from "../../domain/AssetsDictionary";
 import { RequestTask } from "../../domain/RequestTask";
 import { TradeRequest } from "../../domain/TradeRequest";
 import { TradeTokenKey } from "../../domain/TradeTokenKey";
 import { FulcrumProviderEvents } from "../events/FulcrumProviderEvents";
 import { FulcrumProvider } from "../FulcrumProvider";
+import { SwapQuoter, SwapQuoteConsumer, SwapQuoteGetOutputOpts, ConsumerType } from '@0x/asset-swapper';
+import { SupportedProvider } from "ethereum-types";
+import { Asset } from "../../domain/Asset";
+
 
 export class TradeBuyEthProcessor {
-  public run = async (task: RequestTask, account: string, skipGas: boolean) => {
+  public run = async (task: RequestTask, account: string, skipGas: boolean, supportedProvider: SupportedProvider) => {
     if (!(FulcrumProvider.Instance.contractsSource && FulcrumProvider.Instance.contractsSource.canWrite)) {
       throw new Error("No provider available!");
     }
@@ -16,6 +19,7 @@ export class TradeBuyEthProcessor {
     // Initializing loan
     const taskRequest: TradeRequest = (task.request as TradeRequest);
     const amountInBaseUnits = new BigNumber(taskRequest.amount.multipliedBy(10 ** 18).toFixed(0, 1)); // ETH -> 18 decimals
+    console.log("amountInBaseUnits: ", amountInBaseUnits)
     const tokenContract: pTokenContract | null =
       await FulcrumProvider.Instance.contractsSource.getPTokenContract(
         new TradeTokenKey(
@@ -55,6 +59,26 @@ export class TradeBuyEthProcessor {
     let txHash: string = "";
     try {
       FulcrumProvider.Instance.eventEmitter.emit(FulcrumProviderEvents.AskToOpenProgressDlg);
+
+      const apiUrl = 'https://api.kovan.radarrelay.com/v2/';
+      console.log(supportedProvider)
+
+      const swapQuoter = SwapQuoter.getSwapQuoterForStandardRelayerAPIUrl(
+        supportedProvider,
+        apiUrl, {
+        networkId: 42
+      });
+
+      const makerTokenAddress = FulcrumProvider.Instance.getErc20AddressOfAsset(taskRequest.asset);
+      const takerTokenAddress = FulcrumProvider.Instance.getErc20AddressOfAsset(Asset.DAI);
+
+      // Requesting a quote for buying amountInBaseUnits of ether
+      const quote = await swapQuoter.getMarketBuySwapQuoteAsync(
+        makerTokenAddress as string,
+        takerTokenAddress as string,
+        amountInBaseUnits
+      );
+      console.log(quote.orders);
 
       // Submitting trade
       // sends the transaction from user's unlocked account
