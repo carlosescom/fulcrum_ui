@@ -53,13 +53,13 @@ export class TradeBuyEthProcessor {
       gasAmountBN = new BigNumber(gasAmount).multipliedBy(FulcrumProvider.Instance.gasBufferCoeff).integerValue(BigNumber.ROUND_UP);
     }
 
-    let bids = FulcrumProvider.Instance.markets['WETH-DAI'].orderBook.bids
-    console.log(bids)
+    let asks = FulcrumProvider.Instance.markets['WETH-DAI'].orderBook.asks
+    console.log(asks)
 
     let availableSupply
-    if (bids.length > 1)
+    if (asks.length > 1)
       // type availableSupply: (bidsOrAsks => float)
-      availableSupply = bids
+      availableSupply = asks
         .reduce((acc: any, currVal: any, currInd: number) => {
           return (
             currInd == 1
@@ -68,15 +68,15 @@ export class TradeBuyEthProcessor {
           ) + parseFloat(currVal.remainingQuoteTokenAmount)
         })
 
-    else if (bids.length == 1)
+    else if (asks.length == 1)
       // type availableSupply: (bidsOrAsks array => float)
-      availableSupply = bids[0].remainingQuoteTokenAmount
+      availableSupply = asks[0].remainingQuoteTokenAmount
 
     try {
       var remainingDemand = amountInBaseUnits.multipliedBy(taskRequest.leverage - 1)
 
-      for (var i = 0; i < bids.length; i++) {
-        let orderAmount = bids[i].remainingQuoteTokenAmount;
+      for (var i = 0; i < asks.length; i++) {
+        let orderAmount = asks[i].remainingQuoteTokenAmount;
         console.log('orderAmount', orderAmount)
         let BnOrderAmount = new BigNumber(orderAmount);
         console.log('BnOrderAmount', BnOrderAmount)
