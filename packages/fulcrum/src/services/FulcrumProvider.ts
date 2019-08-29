@@ -1398,6 +1398,8 @@ export class FulcrumProvider {
       // Initializing loan
       const taskRequest: TradeRequest = (task.request as TradeRequest);
 
+      let provider = this.web3Wrapper.getProvider()
+
       // if user is opening a position
       if (taskRequest.tradeType === TradeType.BUY) {
         if (taskRequest.collateral !== Asset.ETH) {

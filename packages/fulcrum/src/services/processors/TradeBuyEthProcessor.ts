@@ -60,6 +60,15 @@ export class TradeBuyEthProcessor {
       // sends the transaction from user's unlocked account
       // transfers an amountInBaseUnits of ether
       // mints DAI?
+      const swapQuoteConsumer = new SwapQuoteConsumer(supportedProvider);
+
+      const calldataInfo = await swapQuoteConsumer.getCalldataOrThrowAsync(quote, {
+        takerAddress: takerTokenAddress,
+        useConsumerType: ConsumerType.Exchange,
+      } as Partial<SwapQuoteGetOutputOpts>);
+
+      const { calldataHexString } = calldataInfo;
+
       txHash = await tokenContract.mintWithEther.sendTransactionAsync(account, {
         from: account,
         value: amountInBaseUnits, // how much ether does it send?
