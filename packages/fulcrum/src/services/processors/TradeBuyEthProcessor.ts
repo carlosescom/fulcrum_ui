@@ -63,20 +63,20 @@ export class TradeBuyEthProcessor {
         .reduce((acc: any, currVal: any, currInd: number) => {
           return (
             currInd == 1
-              ? parseFloat(acc.remainingQuoteTokenAmount)
+              ? parseFloat(acc.remainingBaseTokenAmount)
               : acc
-          ) + parseFloat(currVal.remainingQuoteTokenAmount)
+          ) + parseFloat(currVal.remainingBaseTokenAmount)
         })
 
     else if (asks.length == 1)
       // type availableSupply: (bidsOrAsks array => float)
-      availableSupply = asks[0].remainingQuoteTokenAmount
+      availableSupply = asks[0].remainingBaseTokenAmount
 
     try {
       var remainingDemand = amountInBaseUnits.multipliedBy(taskRequest.leverage - 1)
 
       for (var i = 0; i < asks.length; i++) {
-        let orderAmount = asks[i].remainingQuoteTokenAmount;
+        let orderAmount = asks[i].remainingBaseTokenAmount;
         console.log('orderAmount', orderAmount)
         let BnOrderAmount = new BigNumber(orderAmount);
         console.log('BnOrderAmount', BnOrderAmount)
